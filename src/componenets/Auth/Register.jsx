@@ -1,0 +1,238 @@
+import {
+  Box,
+  Button,
+  Flex,
+  FormControl,
+  FormLabel,
+  Grid,
+  Heading,
+  Input,
+  Text,
+  useToast,
+} from "@chakra-ui/react";
+import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytes,
+  uploadBytesResumable,
+} from "firebase/storage";
+import React, { useEffect, useRef, useState } from "react";
+import app from "../../firebase";
+
+export default function Register() {
+  const initialDetails = {
+    fname: "",
+    lname: "",
+    email: "",
+    password: "",
+    cpassword: "",
+    profilePic: "",
+    tel: "",
+  };
+  const [registerDetails, setRegisterDetails] = useState(initialDetails);
+  // const registerDetailsRef = useRef(initialDetails);
+  const toast = useToast();
+  const updateDetails = (e) => {
+    let name = e.target.name;
+    let value = e.target.value;
+    setRegisterDetails({ ...registerDetails, [name]: value });
+  };
+  const passwordCheck = () => {
+    if (registerDetails.password !== registerDetails.cpassword) {
+      toast({
+        description: "Password Mismatch",
+        status: "error",
+        position: "top-right",
+      });
+      setRegisterDetails((details) => {
+        return { ...details, cpassword: "" };
+      });
+      return false;
+    }
+    return true;
+  };
+
+  const uploadProfilePic = () => {
+    const storage = getStorage(app);
+    const file = registerDetails.profilePic;
+    if (file === "") {
+      alert("no file");
+      return;
+    }
+    console.log(file);
+    const profilePicRef = ref(storage, `/profilePics/${file}`);
+    // const metadata = {
+    //   contentType: 'image/'
+    // }
+    const uploadTask = uploadBytesResumable(profilePicRef, file);
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        // Observe state change events such as progress, pause, and resume
+        // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        console.log("Upload is " + progress + "% done");
+        switch (snapshot.state) {
+          case "paused":
+            console.log("Upload is paused");
+            break;
+          case "running":
+            console.log("Upload is running");
+            break;
+        }
+      },
+
+      (err) => {
+        console.log(err);
+      },
+      () => {
+        getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          console.log(downloadURL);
+          setRegisterDetails({ ...registerDetails, profilePic: downloadURL });
+        });
+      }
+    );
+  };
+  const register = (e) => {
+    e.preventDefault();
+    if (!passwordCheck()) return;
+    uploadProfilePic();
+    const auth = getAuth(app);
+
+    createUserWithEmailAndPassword(
+      auth,
+      registerDetails.email,
+      registerDetails.password
+    )
+      .then(({ user }) => {
+        user.photoURL = registerDetails.profilePic;
+        user.phoneNumber = registerDetails.tel;
+        user.displayName = `${registerDetails.fname} ${registerDetails.lname}`;
+        user.email = registerDetails.email;
+        toast({
+          description: "Registration Successful",
+          status: "success",
+        });
+      })
+      .catch((err) => {
+        if (err.code === "auth/email-already-in-use")
+          toast({
+            description: "This email has an account",
+            status: "error",
+          });
+      });
+  };
+  return (
+    <Box
+      w="clamp(15rem, 80vw, 30rem)"
+      px="6"
+      py="4"
+      bg={"white"}
+      borderRadius={"1.5rem"}
+    >
+      <Heading as={"h3"} mb="4" textAlign={"center"}>
+        Register
+      </Heading>
+      <form onSubmit={register}>
+        <Flex
+          px="4"
+          flexWrap={"wrap"}
+          overflowY={"auto"}
+          maxH={"min(30rem, 60vh)"}
+        >
+          <FormControl mb={"4"}>
+            <FormLabel htmlFor="fname">First Name</FormLabel>
+            <Input
+              type="text"
+              name="fname"
+              id="fname"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.fname}
+            ></Input>
+          </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="lname">Last Name</FormLabel>
+            <Input
+              type="text"
+              name="lname"
+              id="lname"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.lname}
+            ></Input>
+          </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="email">Email</FormLabel>
+            <Input
+              type="email"
+              name="email"
+              id="email"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.email}
+            ></Input>
+          </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="tel">Phone Number</FormLabel>
+            <Input
+              type="tel"
+              name="tel"
+              id="tel"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.tel}
+            ></Input>
+          </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="password">Password</FormLabel>
+            <Input
+              type="password"
+              name="password"
+              id="password"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.password}
+            ></Input>
+          </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="password">Confirm Password</FormLabel>
+            <Input
+              type="password"
+              name="cpassword"
+              id="cpassword"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.cpassword}
+            ></Input>
+          </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="profilePic">Profile Picture</FormLabel>
+            <Input
+              type="file"
+              name="profilePic"
+              id="profilePic"
+              onChange={updateDetails}
+              required
+              // value={registerDetailsRef.current.profilepic}
+            ></Input>
+          </FormControl>
+          <Flex
+            flexWrap={"wrap"}
+            gap={"2"}
+            w="full"
+            justifyContent={{ base: "center", md: "space-between" }}
+            alignItems={"center"}
+            mt={"4"}
+          >
+            <Text>Already have an account</Text>
+            <Button type="submit">Register</Button>
+          </Flex>
+        </Flex>
+      </form>
+    </Box>
+  );
+}
