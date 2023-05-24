@@ -10,10 +10,9 @@ import {
 import { NavLink } from "react-router-dom";
 import React from "react";
 
-export default function Navbar({setOpenModal, setAuthType}) {
+export default function Navbar({setOpenModal}) {
   const displayModal = (authType) => {
-    setAuthType(authType)
-    setOpenModal(true);
+    setOpenModal({type: authType, value: true});
   }
   return (
     <Container maxW={"unset"} bg={"brand.100"} color={"rgba(255,255,255,.7)"}>

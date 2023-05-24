@@ -21,7 +21,7 @@ export default function Login() {
   const auth = getAuth(app);
   const toast = useToast();
   const [loginDetails, setLoginDetails] = useState({ email: "", password: "" });
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
   const updateLoginDetails = (e) => {
     let name = e.target.name;
     let value = e.target.value;
@@ -36,7 +36,7 @@ export default function Login() {
     signInWithEmailAndPassword(auth, loginDetails.email, loginDetails.password)
       .then((userCredentials) => {
         // userCredentials.user.email;\
-    setIsLoading(false);
+        setIsLoading(false);
 
         toast({
           title: "Welcome Back",
@@ -47,7 +47,7 @@ export default function Login() {
       })
       .catch((err) => {
         console.log(err);
-    setIsLoading(false);
+        setIsLoading(false);
 
         switch (err.code) {
           case "auth/missing-email":
@@ -75,13 +75,7 @@ export default function Login() {
       });
   };
   return (
-    <Box
-      bg={"white"}
-      w="clamp(15rem, 60vw, 25rem)"
-      px="10"
-      py="4"
-      borderRadius={"1.5rem"}
-    >
+    <>
       <Heading as={"h3"} mb="4" textAlign={"center"}>
         Log In
       </Heading>
@@ -113,9 +107,15 @@ export default function Login() {
           alignItems={"center"}
         >
           <Text>Don't have an account?</Text>
-          <Button type="submit" _disabled={{opacity: .7}} disabled={isLoading}>{isLoading && <Spinner mr={"2"} /> } Login</Button>
+          <Button
+            type="submit"
+            _disabled={{ opacity: 0.7 }}
+            disabled={isLoading}
+          >
+            {isLoading && <Spinner mr={"2"} />} Login
+          </Button>
         </Flex>
       </form>
-    </Box>
+    </>
   );
 }

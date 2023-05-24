@@ -1,16 +1,19 @@
 import {
   Box,
   Button,
+  Checkbox,
   Flex,
   FormControl,
   FormLabel,
   Grid,
   Heading,
   Input,
+  Spinner,
   Text,
   useToast,
 } from "@chakra-ui/react";
 import { createUserWithEmailAndPassword, getAuth } from "firebase/auth";
+import { addDoc, collection, getFirestore } from "firebase/firestore";
 import {
   getDownloadURL,
   getStorage,
@@ -20,6 +23,7 @@ import {
 } from "firebase/storage";
 import React, { useEffect, useRef, useState } from "react";
 import app from "../../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const initialDetails = {
@@ -30,14 +34,28 @@ export default function Register() {
     cpassword: "",
     profilePic: "",
     tel: "",
+    registrationType: { buyer: false, farmer: false },
   };
   const [registerDetails, setRegisterDetails] = useState(initialDetails);
   // const registerDetailsRef = useRef(initialDetails);
+  const [isLoading, setIsLoading] = useState(false);
+  let profilePicURL = "";
   const toast = useToast();
+  const navigate = useNavigate();
   const updateDetails = (e) => {
     let name = e.target.name;
     let value = e.target.value;
-    setRegisterDetails({ ...registerDetails, [name]: value });
+    if (name === "registrationType") {
+      setRegisterDetails({
+        ...registerDetails,
+        registrationType: {
+          ...registerDetails.registrationType,
+          [e.target.id]: e.target.checked,
+        },
+      });
+    } else {
+      setRegisterDetails({ ...registerDetails, [name]: value });
+    }
   };
   const passwordCheck = () => {
     if (registerDetails.password !== registerDetails.cpassword) {
@@ -61,19 +79,14 @@ export default function Register() {
       alert("no file");
       return;
     }
-    console.log(file);
     const profilePicRef = ref(storage, `/profilePics/${file}`);
-    // const metadata = {
-    //   contentType: 'image/'
-    // }
+
     const uploadTask = uploadBytesResumable(profilePicRef, file);
     uploadTask.on(
       "state_changed",
       (snapshot) => {
         // Observe state change events such as progress, pause, and resume
-        // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
-        const progress =
-          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        let progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         console.log("Upload is " + progress + "% done");
         switch (snapshot.state) {
           case "paused":
@@ -90,6 +103,7 @@ export default function Register() {
       },
       () => {
         getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
+          profilePicURL = downloadURL;
           console.log(downloadURL);
           setRegisterDetails({ ...registerDetails, profilePic: downloadURL });
         });
@@ -99,6 +113,7 @@ export default function Register() {
   const register = (e) => {
     e.preventDefault();
     if (!passwordCheck()) return;
+    setIsLoading(true);
     uploadProfilePic();
     const auth = getAuth(app);
 
@@ -107,15 +122,20 @@ export default function Register() {
       registerDetails.email,
       registerDetails.password
     )
-      .then(({ user }) => {
-        user.photoURL = registerDetails.profilePic;
-        user.phoneNumber = registerDetails.tel;
-        user.displayName = `${registerDetails.fname} ${registerDetails.lname}`;
-        user.email = registerDetails.email;
-        toast({
-          description: "Registration Successful",
-          status: "success",
+      .then(async ({ user }) => {
+        const db = getFirestore();
+        const userRef = await addDoc(collection(db, "users"), {
+          ...registerDetails,
+          [registerDetails.profilePic]: profilePicURL,
+          uid: user.uid,
         });
+        if (userRef.id) {
+          navigate("/user");
+          toast({
+            description: "Registration Successful",
+            status: "success",
+          });
+        }
       })
       .catch((err) => {
         if (err.code === "auth/email-already-in-use")
@@ -123,16 +143,11 @@ export default function Register() {
             description: "This email has an account",
             status: "error",
           });
+        setIsLoading(false);
       });
   };
   return (
-    <Box
-      w="clamp(15rem, 80vw, 30rem)"
-      px="6"
-      py="4"
-      bg={"white"}
-      borderRadius={"1.5rem"}
-    >
+    <>
       <Heading as={"h3"} mb="4" textAlign={"center"}>
         Register
       </Heading>
@@ -220,6 +235,24 @@ export default function Register() {
               // value={registerDetailsRef.current.profilepic}
             ></Input>
           </FormControl>
+          <FormControl mb="4">
+            <FormLabel htmlFor="registrationType">Register as:</FormLabel>
+            <Checkbox
+              name="registrationType"
+              id="farmer"
+              mr={"4"}
+              onChange={updateDetails}
+            >
+              Farmer
+            </Checkbox>
+            <Checkbox
+              name="registrationType"
+              id="buyer"
+              onChange={updateDetails}
+            >
+              Buyer
+            </Checkbox>
+          </FormControl>
           <Flex
             flexWrap={"wrap"}
             gap={"2"}
@@ -229,10 +262,16 @@ export default function Register() {
             mt={"4"}
           >
             <Text>Already have an account</Text>
-            <Button type="submit">Register</Button>
+            <Button
+              type="submit"
+              _disabled={{ opacity: 0.7 }}
+              disabled={isLoading}
+            >
+              {isLoading && <Spinner mr={"2"} />} Register
+            </Button>
           </Flex>
         </Flex>
       </form>
-    </Box>
+    </>
   );
 }

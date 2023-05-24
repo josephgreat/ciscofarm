@@ -8,9 +8,13 @@ export default function Modal(props) {
         bg="rgba(0,0,0,.8)"
         pos={"absolute"}
         inset={"0"}
-        onClick={() => props.setOpenModal(false)}
+        onClick={() => props.setOpenModal({type: "", value: false})}
       ></Box>
-      <Box zIndex={"3"}>{props.children}</Box>
+      <Box zIndex={"3"} w="clamp(15rem, 70vw, 30rem)"
+      px="6"
+      py="4"
+      bg={"white"}
+      borderRadius={"1.5rem"} >{props.children}</Box>
     </Grid>
   );
 }

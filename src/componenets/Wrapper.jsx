@@ -6,15 +6,14 @@ import Register from "./Auth/Register";
 import { Outlet } from "react-router-dom";
 
 export default function Wrapper() {
-  const [openModal, setOpenModal] = useState(false);
-  const [authType, setAuthType] = useState('');
+  const [openModal, setOpenModal] = useState({type: "", value: false});
   return (
     <>
-      <Navbar setOpenModal={setOpenModal} setAuthType={setAuthType} />
+      <Navbar setOpenModal={setOpenModal} setAuthType={openModal.type} />
       <Outlet />
-      {openModal && (
-        <Modal setOpenModal={setOpenModal}>
-          {authType === 'login' ? <Login/> : <Register />}
+      {openModal.value && (
+        <Modal setOpenModal={setOpenModal} openModal={openModal}>
+          {openModal.type === 'login' ? <Login/> : <Register />}
         </Modal>
       )}
     </>

@@ -1,4 +1,9 @@
-import { Router, RouterProvider, createBrowserRouter, useParams } from "react-router-dom";
+import {
+  Router,
+  RouterProvider,
+  createBrowserRouter,
+  useParams,
+} from "react-router-dom";
 import "./App.css";
 import LandingPage from "./componenets/pages/LandingPage";
 import { createContext, useState } from "react";
@@ -11,28 +16,32 @@ import app from "./firebase";
 import { useToast } from "@chakra-ui/react";
 import Dashboard from "./componenets/pages/user/Dashboard";
 import UserLayout from "./componenets/pages/user/UserLayout";
+import Products from "./componenets/pages/user/Products";
+import Carts from "./componenets/pages/user/Carts";
 
 function App() {
   const auth = getAuth(app);
- 
+
   const router = createBrowserRouter([
     {
       path: "/",
-      element: <Wrapper/>,
+      element: <Wrapper />,
       children: [
-        {path: '/', element: <LandingPage/>},
+        { path: "/", element: <LandingPage /> },
         {
           path: "product_description",
           element: <ProductDescription />,
         },
-      ]
+      ],
     },
     {
       path: "user",
-      element: <UserLayout/>,
+      element: <UserLayout />,
       children: [
-        {index: true, element: <Dashboard/>}
-      ]
+        { index: true, element: <Dashboard /> },
+        { path: "products", element: <Products /> },
+        { path: "cart", element: <Carts /> },
+      ],
     },
   ]);
   const [productSelected, setProductSelected] = useState([]);
@@ -43,8 +52,9 @@ function App() {
   // })
   return (
     <>
-
-      <AppContext.Provider value={{ productSelected, setProductSelected, toast }}>
+      <AppContext.Provider
+        value={{ productSelected, setProductSelected, toast }}
+      >
         <RouterProvider router={router} />
       </AppContext.Provider>
     </>
